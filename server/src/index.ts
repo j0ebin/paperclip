@@ -39,7 +39,7 @@ import { createStorageServiceFromConfig } from "./storage/index.js";
 import { printStartupBanner } from "./startup-banner.js";
 import { getBoardClaimWarningUrl, initializeBoardClaimChallenge } from "./board-claim.js";
 import { maybePersistWorktreeRuntimePorts } from "./worktree-config.js";
-import { initTelemetry } from "./telemetry.js";
+import { initTelemetry, getTelemetryClient } from "./telemetry.js";
 
 type BetterAuthSessionUser = {
   id: string;
@@ -747,6 +747,12 @@ export async function startServer(): Promise<StartedServer> {
         await new Promise((resolve) => setTimeout(resolve, 2000));
       }
 
+      const telemetryClient = getTelemetryClient();
+      if (telemetryClient) {
+        telemetryClient.stop();
+        await telemetryClient.flush();
+      }
+
       if (embeddedPostgres && embeddedPostgresStartedByThisProcess) {
         logger.info({ signal }, "Stopping embedded PostgreSQL");
         try {
@@ -755,6 +761,7 @@ export async function startServer(): Promise<StartedServer> {
           logger.error({ err }, "Failed to stop embedded PostgreSQL cleanly");
         }
       }
+
       process.exit(0);
     };
 
